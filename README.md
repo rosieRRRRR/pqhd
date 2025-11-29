@@ -11,6 +11,257 @@
 
 ---
 
+## **Summary**
+
+The Post-Quantum Hierarchical Deterministic Wallet (PQHD) is a quantum-resistant Bitcoin custody standard that eliminates classical key possession as a spending condition. Instead of relying on seeds or ECDSA keys—which can be stolen, cloned, harvested, or broken by quantum attack—PQHD enforces a deterministic, multi-predicate model where all authority comes from post-quantum ML-DSA keys and a strictly verifiable execution context.
+
+PQHD defines a unified custody predicate:
+
+```
+valid_for_signing =
+      valid_tick
+  AND valid_consent
+  AND valid_policy
+  AND valid_device
+  AND valid_quorum
+  AND valid_ledger
+  AND valid_psbt
+```
+
+A signature is only permitted when all seven conditions are true.
+If any condition fails, the system enters mandatory fail-closed behaviour and cannot produce a signature. Classical private keys provide zero spending authority after Secure Import.
+
+### **Core Security Mechanisms**
+
+**1. Temporal Authority — `valid_tick`**
+PQHD uses signed EpochTicks from the Bitcoin-anchored Epoch Clock. Ticks must be fresh (≤900 seconds), canonically encoded, monotonic, and correctly referenced. This removes reliance on system clocks and eliminates replay attacks by making time a cryptographic condition.
+
+**2. Intent Binding — `valid_consent`**
+User intent is captured in a canonical ConsentProof, signed with ML-DSA-65 and bound to:
+• a specific transaction (`bundle_hash`)
+• a specific session (`exporter_hash`)
+• a precise tick window
+• a specific device and role
+Consent cannot be reused, forwarded, or replayed.
+
+**3. Deterministic Policy Enforcement — `valid_policy`**
+All authorization rules—roles, thresholds, limits, destinations, time windows—are evaluated deterministically using canonical structures and EpochTicks. No nondeterministic logic is allowed.
+
+**4. Runtime Integrity — `valid_device`**
+Device trust comes exclusively from PQVL attestation. A device is valid only when `drift_state == "NONE"`. Malware, unsafe runtimes, or modified environments immediately block signing.
+
+**5. Deterministic Structure — `valid_psbt` & `valid_ledger`**
+PSBTs are canonicalised (sorted, witness-stripped, deterministically encoded) so all devices compute the same `bundle_hash`.
+The Local Merkle Ledger records monotonic, append-only events; any divergence freezes the ledger.
+
+**6. Multisig Determinism — `valid_quorum`**
+All participants independently evaluate the same predicates. Each device must reach the same decision, preventing coordinator manipulation or cross-device mismatches.
+
+### **Architecture & Compatibility**
+
+PQHD uses ML-DSA-65 for internal signatures and cSHAKE256 for domain-separated deterministic key derivation. Compatibility secp256k1 keys are derived only for script satisfaction.
+On-chain behaviour remains fully classical—PQHD produces standard Bitcoin transactions using standard ECDSA/Schnorr signatures.
+No consensus changes are required.
+
+Recovery uses ML-KEM-encrypted capsules, tick-bound delays, guardian thresholds, and full predicate enforcement. Secure Import uses dual proof-of-possession to safely migrate classical keys into PQHD without granting them authority.
+
+### **Result**
+
+PQHD ensures that Bitcoin can only be spent when fresh time, explicit intent, deterministic policy, runtime integrity, multisig quorum, ledger continuity, and canonical PSBT equivalence all align. No single compromised assumption—key theft, device compromise, stale state, or coordinator tampering—is sufficient.
+
+This provides quantum-safe, deterministic, replay-proof Bitcoin custody fully compatible with today’s network.
+
+---
+
+# **INDEX**
+
+### **[ABSTRACT](#abstract)**
+
+### **[PROBLEM STATEMENT](#problem-statement)**
+
+---
+
+## **1. PURPOSE AND SCOPE (NORMATIVE)**
+
+* [1.1 Purpose](#11-purpose)
+* [1.1A Trustless Temporal Authority (INFORMATIVE)](#11a-trustless-temporal-authority-informative)
+* [1.2 Scope](#12-scope)
+* [1.3 Relationship to PQSF](#13-relationship-to-pqsf)
+* [1.3A Normative Dependencies (NORMATIVE)](#13a-normative-dependencies-normative)
+* [1.4 Relationship to PQVL and Epoch Clock](#14-relationship-to-pqvl-and-epoch-clock)
+* [1.5 Relationship to-pqai](#15-relationship-to-pqai)
+* [1.6 Version Compatibility (NORMATIVE)](#16-version-compatibility-normative)
+
+---
+
+## **2. ARCHITECTURE OVERVIEW (NORMATIVE)**
+
+* [Section 2](#2-architecture-overview-normative)
+
+---
+
+## **3. CRYPTOGRAPHIC PRIMITIVES (NORMATIVE)**
+
+* [3.1 Signatures](#31-signatures)
+* [3.2 Hashing & Derivation](#32-hashing--derivation)
+* [3.3 Encoding](#33-encoding)
+* [3.4 Domain Separation](#34-domain-separation)
+
+---
+
+## **4. DETERMINISTIC KEY HIERARCHY (NORMATIVE)**
+
+* [4.1 Child Key Derivation](#41-child-key-derivation)
+* [4.2 Key Classes](#42-key-classes)
+* [4.3 Canonical Derivation Paths](#43-canonical-derivation-paths)
+* [4.4 Tick-Bound Derivation](#44-tick-bound-derivation)
+* [4.5 Device-Bound Key Revocation Semantics (NORMATIVE)](#45-device-bound-key-revocation-semantics-normative)
+
+---
+
+## **5. TEMPORAL AUTHORITY — EPOCH TICK INTEGRATION (NORMATIVE)**
+
+* [5.1 Tick Verification Requirements](#51-tick-verification-requirements)
+* [5.2 Canonical EpochTick Structure (NORMATIVE)](#52-canonical-epochtick-structure-normative)
+
+---
+
+## **6. POLICY ENFORCER — POLICY ENFORCEMENT (NORMATIVE)**
+
+* [6.1 Predicate Model](#61-predicate-model)
+* [6.2 Policy Object Structure](#62-policy-object-structure)
+* [6.3 Time-Based Predicates](#63-time-based-predicates)
+* [6.4 Role & Threshold Predicates](#64-role--threshold-predicates)
+* [6.5 Destination Policies](#65-destination-policies)
+* [6.6 Device Predicates](#66-device-predicates)
+* [6.7 Ledger Predicates](#67-ledger-predicates)
+* [6.8 PSBT Predicates](#68-psbt-predicates)
+* [6.9 Secure Import Predicates](#69-secure-import-predicates)
+* [6.10 Anomaly Detection](#610-anomaly-detection)
+* [6.11 Custom Predicates](#611-custom-predicates)
+* [6.12 Failure Semantics](#612-failure-semantics)
+* [6.13 Optional Hardening as Predicate Extensions (NORMATIVE)](#613-optional-hardening-as-predicate-extensions-normative)
+
+---
+
+## **7. CONSENTPROOF (NORMATIVE)**
+
+* [7.1 Structure](#71-structure)
+* [7.1.1 Canonical ConsentProof Structure (NORMATIVE)](#711-canonical-consentproof-structure-normative)
+* [7.2 Consent Binding](#72-consent-binding)
+* [7.3 Expiry](#73-expiry)
+* [7.4 Failure Semantics](#74-failure-semantics)
+
+---
+
+## **8. TRANSPORT INTEGRATION (NORMATIVE)**
+
+* [8.1 Exporter Binding](#81-exporter-binding)
+* [8.2 TLSE-EMP Requirements](#82-tlse-emp-requirements)
+* [8.3 STP Requirements](#83-stp-requirements)
+* [8.4 Offline Transport](#84-offline-transport)
+* [8.5 Stealth Mode](#85-stealth-mode)
+* [8.6 Multi-Device Rules](#86-multi-device-rules)
+* [8.7 Replay Protection](#87-replay-protection)
+* [8.8 Failure Semantics](#88-failure-semantics)
+
+---
+
+## **9. PSBT INTEGRITY & SIGNING WORKFLOW (NORMATIVE)**
+
+* [9.1 PSBT Canonicalisation](#91-psbt-canonicalisation)
+* [9.2 Bundle Hash](#92-bundle-hash)
+* [9.3 Structural Validation](#93-structural-validation)
+* [9.4 Role & Quorum Validation](#94-role--quorum-validation)
+* [9.5 Device Attestation](#95-device-attestation)
+* [9.6 Multisig Coordination](#96-multisig-coordination)
+* [9.7 Eligibility Predicate](#97-eligibility-predicate)
+ * [9.8 Merkle Ledger State Verification (NORMATIVE)](https://www.google.com/search?q=%2398-merkle-ledger-state-verification-normative)
+* [9.9 Post-Signing Checks](#99-post-signing-checks)
+* [9.10 Failure Semantics](#910-failure-semantics)
+* [9.11 Destination Compatibility (NORMATIVE)](#911-destination-compatibility-normative)
+
+---
+
+## **10. RECOVERY CAPSULES, CONTINUITY & DEVICE REPLACEMENT (NORMATIVE)**
+
+* [Section 10](#10-recovery-capsules-continuity--device-replacement-normative)
+
+---
+
+## **11. MULTISIG MODEL (NORMATIVE)**
+
+* [11.1 Overview](#111-overview)
+* [11.1 Bitcoin-Facing Compatibility Keys](#111-bitcoin-facing-compatibility-keys)
+* [11.2 Role Definitions](#112-role-definitions)
+* [11.3 Thresholds](#113-thresholds)
+* [11.4 Participant Model](#114-participant-model)
+* [11.5 Coordination Protocol](#115-coordination-protocol)
+* [11.6 Workflow Determinism](#116-workflow-determinism)
+* [11.7 Signing Rules](#117-signing-rules)
+* [11.8 Role Rotation](#118-role-rotation)
+* [11.9 Forbidden Behaviours](#119-forbidden-behaviours)
+* [11.10 Finalisation](#1110-finalisation)
+
+---
+
+## **12. DEVICE ATTESTATION & RUNTIME INTEGRITY (NORMATIVE)**
+
+* [12.1 Device Identity](#121-device-identity)
+* [12.2 Attestation Envelope](#122-attestation-envelope)
+* [12.2.1 Canonical AttestationEnvelope Structure (NORMATIVE)](#1221-canonical-attestationenvelope-structure-normative)
+* [12.3 PQVL Integration](#123-pqvl-integration)
+* [12.4 Code Path Determinism](#124-code-path-determinism)
+* [12.5 Enclave Requirements](#125-enclave-requirements)
+* [12.6 Consent Binding](#126-consent-binding)
+* [12.7 Drift Detection](#127-drift-detection)
+* [12.8 Multisig Attestation](#128-multisig-attestation)
+* [12.9 Time & Attestation Binding](#129-time--attestation-binding)
+* [12.10 Forbidden Behaviours](#1210-forbidden-behaviours)
+* [12.11 Re-Attestation](#1211-re-attestation)
+* [12.12 Ledger Commit Requirements](#1212-ledger-commit-requirements)
+
+---
+
+## **13. STEALTH MODE, OFFLINE MODE & AIR-GAPPED MODE (NORMATIVE)**
+
+* [13.1 Stealth Mode](#131-stealth-mode)
+* [13.2 Offline Mode](#132-offline-mode)
+* [13.3 Air-Gapped Mode](#133-air-gapped-mode)
+* [13.4 Forbidden Behaviours](#134-forbidden-behaviours)
+* [13.5 Mode Transitions](#135-mode-transitions)
+
+---
+
+  * [ANNEX A — Cryptographic Parameter Set](https://www.google.com/search?q=%23annex-a--cryptographic-parameter-set)
+  * [ANNEX B — Canonical Encoding Specifications](https://www.google.com/search?q=%23annex-b--canonical-encoding-specifications)
+  * [ANNEX C — PQHD Error Codes](https://www.google.com/search?q=%23annex-c--pqhd-error-codes)
+  * [ANNEX D — Key Derivation Paths](https://www.google.com/search?q=%23annex-d--key-derivation-paths)
+  * [ANNEX E — Message Format Specification](https://www.google.com/search?q=%23annex-e--message-format-specification)
+  * [ANNEX F — Policy Language Grammar](https://www.google.com/search?q=%23annex-f--policy-language-grammar)
+  * [ANNEX G — Transaction Finalization Flow](https://www.google.com/search?q=%23annex-g--transaction-finalization-flow)
+  * [ANNEX H — Recovery Protocol Details](https://www.google.com/search?q=%23annex-h--recovery-protocol-details)
+  * [ANNEX I — Security Audit Checklist](https://www.google.com/search?q=%23annex-i--security-audit-checklist)
+  * [ANNEX J — HD Seed Adoption](https://www.google.com/search?q=%23annex-j--hd-seed-adoption)
+  * [ANNEX K — Delegated Authority](https://www.google.com/search?q=%23annex-k--delegated-authority)
+  * [ANNEX L — KeyMail](https://www.google.com/search?q=%23annex-l--keymail)
+  * [ANNEX M — Universal Secret Derivation](https://www.google.com/search?q=%23annex-m--universal-secret-derivation)
+  * [ANNEX N — Credential Vault](https://www.google.com/search?q=%23annex-n--credential-vault)
+  * [ANNEX O — Service-Scoped API Key Derivation](https://www.google.com/search?q=%23annex-o--service-scoped-api-key-derivation)
+  * [ANNEX P — Verified Identity & KYC Credentials](https://www.google.com/search?q=%23annex-p--verified-identity-kyc-credentials)
+  * [ANNEX Q — Delegated Identity](https://www.google.com/search?q=%23annex-q--delegated-identity)
+  * [ANNEX R — Delegated Spending](https://www.google.com/search?q=%23annex-r--delegated-spending)
+  * [ANNEX S — Multi-Chain Deterministic Interoperability](https://www.google.com/search?q=%23annex-s--multi-chain-deterministic-interoperability)
+  * [ANNEX T — Cross-Chain & Layer-2 Integration](https://www.google.com/search?q=%23annex-t--cross-chain-layer-2-integration)
+  * [ANNEX U — Deterministic Derivation Security](https://www.google.com/search?q=%23annex-u--deterministic-derivation-security)
+  * [ANNEX V — Normative Ecosystem Dependencies](https://www.google.com/search?q=%23annex-v--normative-ecosystem-dependencies)
+
+## **[GLOSSARY](#glossary-canonical)**
+
+## **[ACKNOWLEDGEMENTS](#acknowledgements-informative)**
+
+-----
+
 # **ABSTRACT**
 
 The Post-Quantum Hierarchical Deterministic Wallet (PQHD) eliminates classical-key possession as a spend condition. After Secure Import, compromise of any classical ECDSA keys or legacy seeds does not grant spending authority. All authorisation derives solely from PQHD’s post-quantum key hierarchy and the unified custody predicate, in which a signature may be produced only when all conditions evaluate to true:
