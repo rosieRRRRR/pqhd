@@ -294,7 +294,9 @@ Internally, PQHD integrates verifiable time from the Epoch Clock, intent binding
 
 Despite these internal guarantees, all on-chain behaviour remains fully classical. PQHD produces standard Bitcoin transactions using secp256k1 public keys and classical ECDSA or Schnorr signatures. Bitcoin-facing keys are deterministic compatibility keys derived only for script construction and witness satisfaction; no PQHD seeds, ML-DSA keys, predicate results, or internal state appear on-chain.
 
-PQHD provides reproducible, deterministic behaviour across devices, programming languages, and operating environments, including offline, air-gapped, multisig, enterprise, and sovereign deployments. The result is a custody architecture in which Bitcoin remains protected even under complete classical-key compromise, runtime compromise, replay attempts, or system-level manipulation, without requiring any changes to Bitcoin consensus.
+PQHD does not require any changes to Bitcoin consensus. It is fully compatible with current signature rules and produces standard classical transactions. The only scenario that would require a Bitcoin consensus change is a hypothetical quantum computer capable of deriving a secp256k1 private key within the 10 minute mempool window. That scenario cannot be solved by any wallet and is therefore outside the scope of PQHD. Until such a scenario exists, PQHD protects funds against all quantum enabled attacks that can be solved at the wallet layer.
+
+PQHD provides reproducible, deterministic behaviour across devices, programming languages and operating environments, including offline, air gapped, multisig, enterprise and sovereign deployments. The result is a custody architecture in which Bitcoin remains protected even under complete classical key compromise, runtime compromise, replay attempts or system level manipulation, without requiring any changes to Bitcoin consensus.
 
 ---
 
