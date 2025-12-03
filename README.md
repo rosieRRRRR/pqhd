@@ -3239,7 +3239,7 @@ No exceptions are permitted.
 
 # **25. Retention Time Lock (RTL)**
 
-Retention Time Lock (RTL) is an optional operational mechanism that reduces the time a Bitcoin transaction is visible in the mempool before confirmation. RTL prevents a transaction from becoming valid until a specified future block height or timestamp, and PQHD signers only authorise spends that contain this future-dated timelock. The wallet broadcasts the fully signed transaction shortly before the timelock expires, creating a controlled **Retention Window** (typically 30–90 seconds) instead of the standard ~10-minute mempool exposure. RTL reduces the opportunity for fee-based or timing-based attacks but is not a cryptographic security feature and does not provide quantum resistance. RTL is fully compatible with Bitcoin consensus rules.
+Retention Time Lock (RTL) is an optional operational mechanism that reduces the time a Bitcoin transaction is visible in the mempool before confirmation. RTL prevents a transaction from becoming valid until a specified future block height or timestamp, and PQHD signers only authorise spends that contain this future-dated timelock. The wallet broadcasts the fully signed transaction shortly before the timelock expires, creating a controlled Retention Window (typically 30–90 seconds). An optional Time-Lock Extension (TLE) allows safely shifting the activation time when the Retention Window becomes too tight. RTL and TLE are visibility-minimisation techniques, not cryptographic security features, and remain fully compatible with Bitcoin consensus rules.
 
 ---
 
@@ -3247,21 +3247,21 @@ Retention Time Lock (RTL) is an optional operational mechanism that reduces the 
 
 A spend protected with RTL behaves as follows:
 
-* The transaction **cannot** be mined until its RTL timelock has expired.
-* PQHD signers **only** sign transactions that contain a valid RTL timelock.
-* The wallet **delays broadcast** until shortly before the timelock becomes valid.
-* The transaction is visible in the mempool for only a short, controlled period (Retention Window).
-* If the first eligible block is missed, the transaction behaves normally as an unconfirmed transaction.
+* The transaction cannot be mined until its RTL timelock has expired.
+* PQHD signers only sign transactions that contain a valid RTL timelock.
+* The wallet delays broadcast until shortly before the timelock becomes valid.
+* The transaction is visible in the mempool only during the Retention Window.
+* If the first eligible block is missed, the transaction proceeds as a normal unconfirmed transaction.
 
-RTL is designed for operational visibility minimisation, not cryptographic protection.
+RTL provides operational visibility minimisation, not cryptographic protection.
 
 ---
 
 ## **25.2 RTL Script and Transaction Structure (Normative)**
 
-1. RTL uses standard Bitcoin timelocks. A UTXO using RTL **MUST** embed one of:
+1. RTL uses standard Bitcoin timelocks. Implementations MUST use one of:
 
-   **Transaction-level RTL (absolute timelock)**
+   **Transaction-level RTL:**
 
    ```
    nLockTime = lock_height
@@ -3276,35 +3276,31 @@ RTL is designed for operational visibility minimisation, not cryptographic prote
    **Script-level RTL (CLTV):**
 
    ```
-   <locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <multisig script...>
+   <locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP <multisig script>
    ```
 
-2. All PQHD signers in the multisig quorum **MUST** verify that the RTL timelock is present, correctly encoded, and future-dated before signing.
+2. PQHD signers MUST verify that the RTL timelock is present, future-dated, and correctly encoded before signing.
 
-3. Any transaction spending an RTL-protected UTXO **without** a correct timelock **MUST** be rejected.
+3. A spend from an RTL-protected UTXO without a correct RTL timelock MUST be rejected.
 
-4. RTL does not modify consensus behaviour; miners and nodes treat RTL transactions as ordinary timelocked spends.
+4. RTL does not alter consensus behaviour; nodes treat RTL transactions as standard timelocked spends.
 
 ---
 
 ## **25.3 RTL Signing Policy (Normative)**
 
 1. **Determine chain state**
-   Signers receive:
+   Signers receive `current_height` and `current_time`.
 
-   * `current_height`
-   * `current_time`
+2. **Select activation point**
 
-2. **Select the RTL activation point**
-   Implementations MAY use block-based or time-based RTL:
-
-   *Block-based:*
+   **Block-based:**
 
    ```
    rtl_height = current_height + 1
    ```
 
-   *Time-based:*
+   **Time-based:**
 
    ```
    rtl_time = current_time + TARGET_INTERVAL_SECONDS
@@ -3314,29 +3310,25 @@ RTL is designed for operational visibility minimisation, not cryptographic prote
 
 3. **Embed RTL parameters**
 
-   Set either:
-
    ```
    nLockTime = rtl_height
    ```
 
-   or:
+   or
 
    ```
    nLockTime = rtl_time
    ```
 
 4. **Signature production**
-   PQHD signers **MUST** refuse to sign if:
+   PQHD signers MUST refuse to sign if:
 
-   * RTL parameters are missing
-   * RTL parameters are earlier than current time/height
-   * The transaction deviates from the RTL template
+   * RTL parameters are missing,
+   * RTL parameters are earlier than `current_height` or `current_time`,
+   * the transaction deviates from the RTL template.
 
 5. **Broadcast timing**
-   The wallet **MUST** delay broadcast until shortly before timelock expiry.
-
-   Broadcast when:
+   Broadcast MUST occur only when:
 
    **Height-based:**
 
@@ -3352,79 +3344,66 @@ RTL is designed for operational visibility minimisation, not cryptographic prote
 
    Recommended defaults:
 
-   * Normal Mode: `SAFETY_SECONDS = 60–90`
-   * Tight Mode: `SAFETY_SECONDS = 30` (requires high feerate + reliable connectivity)
+   * `SAFETY_SECONDS = 60–90`
+   * `SAFETY_SECONDS = 30` in Tight Mode with sufficient fee rate.
 
 6. **Fail-closed**
-   If RTL cannot be validated, signers **MUST** refuse the spend.
+   Any RTL validation failure MUST cause signers to reject the spend.
 
 ---
 
-## **25.4 Visibility Timeline and Cloaking Behaviour (Non-normative)**
+## **25.4 Visibility Timeline (Informative)**
 
-RTL reduces transaction visibility by keeping the transaction **invalid** until near its activation time.
+**Without RTL:**
+Transaction is visible in the mempool for ~10 minutes.
 
-### **Normal timeline (no RTL)**
+**With RTL:**
+Transaction is invalid and cloaked until the final 30–90 seconds before expiry, during which it is broadcast and becomes visible.
 
-* Constructed
-* Signed
-* **Broadcast immediately**
-* Visible in mempool for ~10 minutes
-
-### **RTL timeline**
-
-* Constructed
-* Signed
-* **Cloaked (invalid)** until timelock
-* **Broadcast 30–90 seconds before expiration**
-* **Visible only during the Retention Window**
-
-RTL does **not** guarantee inclusion in the next block; block discovery is probabilistic.
+RTL shortens the mempool visibility window without altering probabilistic block discovery.
 
 ---
 
-## **25.5 Estimating Block Timing (Informative)**
+## **25.5 Block-Timing Estimation (Informative)**
 
-Implementations may compute RTL activation using:
+Implementations MAY estimate activation time using:
 
-1. **Fixed interval assumption**
+1. **Fixed interval:**
 
    ```
-   rtl_time = last_block_time + 600 seconds
+   rtl_time = last_block_time + 600
    ```
 
-2. **Rolling average (adaptive)**
+2. **Rolling average:**
 
    ```
    avg_interval = (time_of_block_n − time_of_block_(n−N)) / N
    rtl_time = last_block_time + avg_interval
    ```
 
-3. **Conservative bounds**
+3. **Conservative bounds:**
 
    ```
    300s ≤ estimated_interval ≤ 900s
    ```
 
-Propagation times are generally a few seconds, so the Retention Window is dominated by `SAFETY_SECONDS`.
-
 ---
 
 ## **25.6 Multisig Binding Requirements (Normative)**
 
-1. RTL **MUST** be enforced independently by all PQHD signers.
-2. If RTL is enabled for a UTXO, any transaction lacking the correct RTL timelock **MUST** be rejected.
-3. Coordinators MUST NOT be relied upon for RTL enforcement; each signer validates the condition independently.
-4. Replacement transactions (RBF) **MUST NOT** remove or weaken RTL unless explicitly allowed by policy.
+1. RTL MUST be enforced independently by all PQHD signers.
+2. Any non-RTL spend of an RTL-protected UTXO MUST fail.
+3. Coordinators MUST NOT enforce RTL; each signer validates it independently.
+4. RBF MUST NOT remove or weaken RTL unless explicitly allowed by wallet policy.
 
 ---
 
-## **25.7 Retention Window, Tight Variants, and Fee Requirements (Normative)**
+## **25.7 Retention Window and Fee Requirements (Normative)**
 
-1. **SAFETY_SECONDS** MUST be configurable:
+1. `SAFETY_SECONDS` MUST be configurable:
 
-   * Normal Mode: **60–90 seconds**
-   * Tight Mode: **30 seconds** (optional, requires higher fees)
+   * Normal Mode: 60–90 seconds
+   * Tight Mode: 30 seconds
 
 2. Retention Window:
 
@@ -3432,72 +3411,140 @@ Propagation times are generally a few seconds, so the Retention Window is domina
    Retention Window ≈ SAFETY_SECONDS + propagation_time
    ```
 
-3. Tight Mode requirements:
+3. Tight Mode requires:
 
-   * High-priority feerate
-   * Consistent network connectivity
-   * Acceptable risk of missing the first eligible block
+   * feerate at or above the high-priority band,
+   * reliable node connectivity,
+   * acceptance that same-block inclusion is not guaranteed.
 
 4. If the first eligible block is missed:
 
-   * The transaction continues as a normal unconfirmed transaction
-   * Fee bumping is permitted but must respect PQHD policy
-   * Users MAY reissue with a new RTL if desired
+   * the transaction proceeds normally,
+   * fee bumping MUST obey PQHD fee policy,
+   * wallets MAY reissue with a new RTL.
+
+---
+
+## **25.7A Optional Time-Lock Extension (TLE) (Normative–Optional)**
+
+Implementations MAY support TLE when the Retention Window becomes too tight to broadcast safely under current network conditions.
+
+### **1. Purpose**
+
+TLE allows creation of a new RTL transaction with a later activation point, preserving the cloaked state and avoiding premature broadcast.
+
+### **2. Extension Rules**
+
+1. **Timing constraint**
+   The extension MUST occur before the original RTL timelock becomes valid.
+
+2. **New transaction requirement**
+   TLE MUST create a new PSBT with:
+
+   * a new bundle_hash,
+   * a new absolute timelock:
+
+     ```
+     new_lock = old_lock + EXTENSION_DELTA
+     ```
+   * a strictly later activation point.
+
+3. **Delta calculation**
+   `EXTENSION_DELTA` MUST be:
+
+   * a fixed policy value, or
+   * deterministically derived from network conditions,
+     and MUST satisfy:
+   * minimum: 1 block (or 300 seconds),
+   * maximum: policy limit (recommended ≤5 blocks).
+
+4. **Signer validation**
+   Signers MUST verify:
+
+   * `new_lock > old_lock`,
+   * no weakening of feerate relative to policy minimum,
+   * all PQHD predicates remain satisfied,
+   * fresh ConsentProof is supplied unless policy explicitly allows reuse and:
+
+     * `intent_hash` unchanged,
+     * `exporter_hash` valid,
+     * tick fresh.
+
+5. **PSBT invalidation**
+   The previous RTL transaction MUST be voided and discarded.
+
+### **3. Signature Requirements**
+
+Signers MAY authorise a TLE only if:
+
+* original RTL timelock is still future-dated,
+* all PQHD predicates hold,
+* resulting Retention Window meets policy minimum.
+
+If any condition fails, signers MUST reject with a TLE error code.
+
+### **4. Broadcast Behaviour**
+
+After a TLE PSBT is created:
+
+* original PSBT is discarded,
+* new PSBT becomes the operative spend,
+* standard RTL broadcast rules apply.
+
+### **5. Ledger Recording**
+
+A TLE MUST append the following ledger entry:
+
+```
+event: "rtl_time_lock_extended"
+payload: {
+  old_lock: <uint>,
+  new_lock: <uint>,
+  reason: <tstr>
+}
+```
+
+### **6. Use Cases**
+
+TLE is appropriate when:
+
+* network latency increases,
+* feerates spike,
+* same-block inclusion requires shifting activation,
+* the user defers inclusion deliberately,
+* Tight Mode conditions become unstable.
+
+### **7. Security Model**
+
+TLE MUST preserve all RTL guarantees:
+
+* no early broadcast,
+* no lowering of the timelock,
+* no fee-policy weakening,
+* no visibility outside the revised Retention Window.
 
 ---
 
 ## **25.8 Relationship to Quantum Safety (Informative)**
 
-RTL does **not** provide quantum protection.
-
-* Quantum safety is provided solely by PQHD’s post-quantum custody model.
-* Classical ECDSA keys have **zero spending authority** after Secure Import.
-* RTL only reduces mempool visibility; it does not alter cryptographic strength.
-
-RTL should be described as an **operational visibility-reduction mechanism**, not a cryptographic safeguard.
+RTL is not a quantum-safety control.
+Quantum resistance derives from PQHD’s post-quantum custody model.
+RTL only reduces mempool visibility and does not alter cryptographic strength.
 
 ---
 
-# **25.9 RTL in Classical Wallets (Informative)**
+## **25.9 RTL in Classical Wallets (Informative)**
 
-Classical Bitcoin wallets (non-PQHD) can implement RTL using only native consensus features:
+Any classical ECDSA wallet can implement RTL using standard Bitcoin primitives.
 
-* `nLockTime`
-* CLTV (`OP_CHECKLOCKTIMEVERIFY`)
-* Delayed broadcast in wallet software
+### **Operational Model**
 
-No additional script, PSBT extensions, or consensus changes are required.
+1. Create a future-dated transaction using `nLockTime` or CLTV.
+2. Sign with ECDSA.
+3. Hold the signed transaction locally until the final 30–90 seconds before expiry.
+4. Broadcast within the Retention Window.
 
-### **Operational model for classical wallets**
-
-1. **Create a future-dated transaction**
-
-   ```
-   nLockTime = current_height + RTL_delay
-   ```
-
-   The transaction remains invalid and unrelayable until the activation point.
-
-2. **Sign normally using secp256k1**
-   The transaction sits locally; no network exposure occurs.
-
-3. **Delay broadcast until the RTL window**
-   Wallet holds the signed transaction until:
-
-   ```
-   current_height >= nLockTime - SAFETY_BLOCKS
-   ```
-
-   or:
-
-   ```
-   current_time >= rtl_time - SAFETY_SECONDS
-   ```
-
-4. **Broadcast during the final 30–90 seconds**
-   Mempool visibility is minimised to the Retention Window.
-
-### **Example pseudocode**
+### **Example**
 
 ```
 tx = build_transaction(inputs, outputs)
@@ -3510,29 +3557,25 @@ while current_height < (nLockTime - SAFETY_BLOCKS):
 broadcast(tx_signed)
 ```
 
-### **Security properties in classical (ECDSA) wallets**
+### **Security Properties**
 
-In classical wallets RTL is **only**:
+* reduces mempool visibility,
+* does not prevent key compromise,
+* does not provide quantum safety,
+* purely operational.
 
-* a **delay-and-broadcast scheduling technique**
-* a way to reduce exposure to fee-sniping and mempool observers
+### **Interoperability**
 
-It **does not**:
+Classical wallets may construct RTL transactions freely.
+PQHD wallets enforce RTL via signer predicates, preventing weakening or bypass.
 
-* prevent private-key compromise
-* mitigate seed theft
-* provide quantum resistance
-* remove classical-key authority
+---
 
-In pure ECDSA custody, RTL is a **non-cryptographic operational tool**, not a security boundary.
+## **25.10 Error Codes (Normative)**
 
-### **Interoperability with PQHD**
-
-* Classical wallets can freely generate RTL transactions.
-* PQHD signers **enforce** RTL as part of the signing predicate.
-* This ensures RTL cannot be removed, shortened, or bypassed without detection.
-
-RTL remains consensus-neutral and fully cross-compatible across both PQHD and classical wallets.
+* `E_TLE_INVALID`
+* `E_TLE_TOO_EARLY`
+* `E_TLE_DELTA_VIOLATION`
 
 ---
 
