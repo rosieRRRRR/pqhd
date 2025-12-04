@@ -3360,7 +3360,8 @@ A Quantum-Hardened RTL spend is valid only when:
 
 1. the RTL timing predicate is satisfied;
 2. the chosen Taproot script path includes a hashlock on a per-attempt secret `S`;
-3. the witness reveals `S` such that `HASH160(S) == C`;
+3. the witness reveals `S` such that `HASH160(S) == C`; 
+Bitcoin Script requires the preimage S to be revealed inside the same spending transaction; no separate reveal transaction is used or required. The secret S appears only in the witness of the RTL spend when the transaction is broadcast.
 4. all multisig and PQHD predicates are satisfied.
 
 ---
