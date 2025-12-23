@@ -140,21 +140,28 @@ AND valid_psbt
    1.6 [Version Compatibility](#16-version-compatibility-normative)
    1.7 [Threat Model and Failure Domains](#17-threat-model-and-failure-domains-normative)
    1.8 [Conformance Tiers](#18-conformance-tiers-normative)
-   1.8.1 [Unified Custody Predicate](#181-unified-custody-predicate)
-   1.8.2 [PQHD Custody (Baseline)](#182-pqhd-custody-baseline--minimum-custody-tier)
-   1.8.3 [PQHD Custody (Enterprise)](#183-pqhd-custody-enterprise--hardened-custody-tier)
-   1.8.4 [Transactional Profile (Non-Custodial Profile)](#184-transactional-profile-non-custodial-profile)
+      1.8.1 [Unified Custody Predicate](#181-unified-custody-predicate)
+      1.8.2 [PQHD Custody (Baseline)](#182-pqhd-custody-baseline--minimum-custody-tier)
+      1.8.3 [PQHD Custody (Enterprise)](#183-pqhd-custody-enterprise--hardened-custody-tier)
+      1.8.4 [Transactional Profile (Non-Custodial Profile)](#184-transactional-profile-non-custodial-profile)
+      1.8.5 [Execution Context Declaration](#185-execution-context-declaration)
    1.9 [Quantum Threat Model and Custody Scope Clarification](#19-quantum-threat-model-and-custody-scope-clarification-normative)
-   1.9.1 [Quantum Threat Model](#191-quantum-threat-model)
-   1.9.2 [Quantum-Resilient Custody Qualification](#192-quantum-resilient-custody-qualification-normative)
-   1.9.3 [Explicit Exclusion of the Transactional Profile](#193-explicit-exclusion-of-the-transactional-profile-normative)
-   1.9.4 [Normative Interpretation and Evaluation Rule](#194-normative-interpretation-and-evaluation-rule-normative)
-   1.9.5 [Canonical Evaluation Statement](#195-canonical-evaluation-statement-normative)
-
+      1.9.1 [Quantum Threat Model](#191-quantum-threat-model)
+      1.9.2 [Quantum-Resilient Custody Qualification](#192-quantum-resilient-custody-qualification-normative)
+      1.9.3 [Explicit Exclusion of the Transactional Profile](#193-explicit-exclusion-of-the-transactional-profile-normative)
+      1.9.4 [Normative Interpretation and Evaluation Rule](#194-normative-interpretation-and-evaluation-rule-normative)
+      1.9.5 [Canonical Evaluation Statement](#195-canonical-evaluation-statement-normative)
 
 2. [Architecture Overview](#2-architecture-overview-normative)
    2.1 [Architectural Layers](#21-architectural-layers)
-   2.2 [Deterministic Authority Model](#22-deterministic-authority-model)
+   2.2 [Two-Layer Quantum Protection Model](#22-two-layer-quantum-protection-model-informative)
+   2.2.1 [Authority–Execution Separation Principle](#221-authorityexecution-separation-principle)
+   2.2.2 [Execution Context Variants](#222-execution-context-variants-informative)
+   2.2.3 [Execution-Time Hardening Integration](#223-execution-time-hardening-integration-normativeoptional)
+      2.2.3.1 [Authority Boundary Enforcement](#2231-authority-boundary-enforcement)
+      2.2.3.2 [Unified Custody Predicate Primacy](#2232-unified-custody-predicate-primacy)
+      2.2.3.3 [Execution Hardening Scope](#2233-execution-hardening-scope)
+   2.2.4 [No Default Spend Path](#224-no-default-spend-path)
    2.3 [Fail-Closed Semantics](#23-fail-closed-semantics)
    2.4 [Compatibility with Bitcoin Consensus](#24-compatibility-with-bitcoin-consensus)
    2.5 [Offline, Air-Gapped, and Sovereign Operation](#25-offline-air-gapped-and-sovereign-operation)
@@ -253,6 +260,10 @@ AND valid_psbt
 22. [Backwards Compatibility](#22-backwards-compatibility-informative)
 
 23. [Conformance Requirements](#23-conformance-requirements-normative)
+   23.1 [Conformance Declaration](#231-conformance-declaration)
+   23.2 [Minimum Requirements](#232-minimum-requirements)
+   23.3 [Auditability](#233-auditability)
+   23.4 [Conformance Test Suite Requirement](#234-conformance-test-suite-requirement-normative)
 
 24. [Normative References](#24-normative-references-normative)
 
@@ -264,19 +275,21 @@ AND valid_psbt
 
 ### **Annexes**
 
-* [Annex A — Temporal Authority](#annex-a--temporal-authority-epoch-clock-normative)
-* [Annex B — Runtime Integrity](#annex-b--runtime-integrity-pqvl-normative)
+* [Annex A — Temporal Authority](#annex-a--temporal-authority-normative)
+* [Annex B — Runtime Integrity](#annex-b--runtime-integrity-normative)
 * [Annex C — Canonical Encoding & Deterministic Structures](#annex-c--canonical-encoding--deterministic-structures-normative)
 * [Annex D — Canonical Schemas & Test Vectors](#annex-d--canonical-schemas--test-vectors-normative)
 * [Annex E — Deterministic Ledger & State Continuity](#annex-e--deterministic-ledger--state-continuity-normative)
 * [Annex F — Secure Import & Classical Key Transition](#annex-f--secure-import--classical-key-transition-normative)
 * [Annex G — Recovery Capsules & Governance](#annex-g--recovery-capsules--governance-normative)
-* [Annex H — BTCC Spend-Path Hardening](#annex-h--btcc-spend-path-hardening-otqh-m--ts-mrc-normative-optional)
+* [Annex H-360 — BIP-360 Execution-Time Hardening](#annex-h-360--bip-360-execution-time-hardening-normativeoptional)
+* [Annex H-CC — Execution-Time Hardening (Taproot/Tapscript)](#annex-h-cc--execution-time-hardening-taproottapscript-normativeoptional)
 * [Annex I — Implementation Profile A](#annex-i--implementation-profile-a-normative)
-* [Annex J — End-to-End Worked Examples](#annex-j--end-to-end-worked-examples-informative)
+`* [Annex J — Illustrative Examples](#annex-j--illustrative-examples-informative)
 * [Annex K — Interoperability Requirements](#annex-k--interoperability-requirements-normative)
 * [Annex L — PQC Verification and Testing Requirements](#annex-l--pqc-verification-and-testing-requirements-normative)
 * [Annex M — Secure Migration Protocol](#annex-m--secure-migration-protocol-normative)
+* [Annex N — Advanced Execution-Time Hardening Research](#annex-n--advanced-execution-time-hardening-research-informative)
 
 ---
 
@@ -525,6 +538,16 @@ Requirements:
 * **Structural hardening:** Transactional Profile SHOULD implement canonical structures (ConsentProof, EpochTick usage, deterministic policy objects, PSBT canonicalisation, and basic ledger continuity).
 * **Explicit non-custody:** Transactional Profile MUST NOT be described or marketed as PQHD Custody. Transactional Profile fails under device compromise.
 
+### **1.8.5 Execution Context Declaration**
+
+Implementations MUST declare which execution context(s) they support:
+
+- **Path A (BIP-360 / P2TSH)** — script-path-only outputs with the key path removed.
+- **Path B (Bitcoin Current Consensus / Taproot)** — Taproot outputs where a key path may exist.
+
+Execution context declaration is a disclosure requirement and does not affect custody tier classification or custody guarantees.
+Concrete Bitcoin construction rules are defined by implementation profiles (Annex I) and applicable annexes (Annex H-360, Annex H-CC, Annex M).
+
 ---
 
 ### **1.9 Quantum Threat Model and Custody Scope Clarification (NORMATIVE)**
@@ -631,47 +654,104 @@ Each layer MUST behave identically across devices, platforms, and implementation
 
 ## **2.2 Two-Layer Quantum Protection Model (INFORMATIVE)**
 
-PQHD provides **custody-level protection only**. It governs *spending authority*, not execution-time exposure. Under **PQHD Custody (Baseline or Enterprise)**, possession of classical private keys—whether recovered classically or via quantum attack—is insufficient to authorise a spend.
+PQHD provides **custody-level protection only**. It governs *spending authority*, not execution mechanics or at-rest exposure. Under **PQHD Custody (Baseline or Enterprise)**, possession of classical private keys—whether recovered classically or via quantum attack—is insufficient to authorise a spend.
 
-**Execution-time and mempool exposure risks are mitigated separately.** Reduction of short-range, broadcast-time attack windows is provided by **Bitcoin-current-consensus spend-path hardening mechanisms** (for example, **OTQH-M** and **TS-MRC**), defined in a companion specification. These mechanisms are generated and applied **only after** PQHD custody authorisation evaluates to true and **MUST NOT** be interpreted as providing an alternative authority path.
+### **2.2.1 Authority–Execution Separation Principle**
 
----
+PQHD enforces a strict boundary between **custody authority** and **execution mechanics**:
 
-### **Security Scope Clarification (INFORMATIVE)**
+1. **Custody Authority Layer (PQHD)**
+   - Governs *whether* signing is permitted
+   - Evaluates the unified custody predicate
+   - Removes authority from classical key possession
+   - Enforces time, consent, policy, device integrity, quorum, ledger continuity, and PSBT equivalence
 
-Quantum-resilient Bitcoin security under this architecture is achieved through **two distinct and non-substitutable layers**:
+2. **Execution Layer (Bitcoin Consensus)**
+   - Governs *how* transactions are constructed and broadcast
+   - Operates under Bitcoin consensus and mempool policy
+   - Includes execution-time exposure management
+   - Remains independent of custody authority
 
-1. **Custody Authority (PQHD)**
-   Removes spending authority from classical keys by enforcing a unified custody predicate incorporating verifiable time, explicit user intent, deterministic policy evaluation, runtime integrity, quorum correctness, ledger continuity, and PSBT equivalence.
+This separation ensures PQHD remains compatible with evolving Bitcoin execution patterns while preserving custody guarantees.
 
-2. **Execution-Time Hardening (OTQH-M + TS-MRC)**
-   Reduces mempool and short-range exposure during public transaction broadcast by compressing disclosure and ensuring no retained signing authority exists after authorisation.
+### **2.2.2 Execution Context Variants (Risk Classes) (INFORMATIVE)**`
 
-Both layers are required to address the full quantum threat surface. Neither layer replaces or weakens the other.
+PQHD custody authority is execution-mechanism-agnostic. The execution contexts described below are used solely for classifying quantum exposure and execution risk. This section does not define Bitcoin script templates, output encodings, or transaction construction rules.
 
----
+**Path A — BIP-360 Execution Context (P2TSH)**  
+- Script-path-only Taproot outputs (no key path)
+- Reduces long-range, dormant-UTXO quantum exposure
+- Execution-time exposure remains during spends
+- Compatible with QH-EP execution hardening
 
-### **Two-Layer Security Model (INFORMATIVE)**
+**Path B — Bitcoin Current Consensus Execution Context**  
+- Standard Taproot outputs (key path may exist)
+- At-rest exposure unchanged
+- Execution-time exposure during spends
+- Compatible with QH-EP execution hardening
 
-This specification contributes the **execution-time layer** of a two-part quantum-resilient design:
+**Common Requirements:**
+- Both paths require PQHD custody authorisation before execution
+- Both may benefit from execution-time hardening where implemented
+- Neither path modifies custody authority semantics
 
-* **PQHD (Custody Layer):**
-  Ensures that classical key possession alone cannot authorise spending under quantum threat assumptions.
+### **2.2.3 Execution-Time Hardening Integration (NORMATIVE–OPTIONAL)**
 
-* **OTQH-M + TS-MRC (Execution Layer):**
-  Mitigates short-range and mempool replacement attacks by shrinking the effective exposure window during transaction broadcast.
+Execution-time hardening mechanisms reduce exposure during transaction broadcast but MUST NOT be treated as sources of authority.
 
-When paired with **PQHD Custody (Baseline or Enterprise)**, OTQH-M and TS-MRC **MUST** be applied only after custody authorisation has evaluated to true and **MUST NOT** be construed as creating any alternative or parallel authorisation mechanism.
+#### **2.2.3.1 Authority Boundary Enforcement**
 
----
+All execution-time hardening mechanisms, including QH-EP (Quantum-Hardened Execution Patterns) and EPOCH Protocol bindings:
 
-### **Frequently Asked Clarification (INFORMATIVE)**
+- MUST be applied **only after** `valid_for_signing = true`
+- MUST NOT influence custody predicate evaluation
+- MUST NOT create alternative authorisation paths
+- MUST NOT bypass policy, consent, or quorum requirements
 
-**Q:** Does PQHD alone keep Bitcoin safe from quantum attacks?
-**A:** PQHD protects *custody authority* by removing reliance on classical private keys. It ensures that key possession alone cannot authorise spending.
+#### **2.2.3.2 Unified Custody Predicate Primacy**
 
-**Q:** What protects against quantum attacks during transaction broadcast?
-**A:** Execution-time hardening mechanisms such as **OTQH-M** and **TS-MRC** mitigate broadcast and mempool exposure by reducing the effective attack window during public transaction propagation.
+The unified custody predicate remains the sole authority determinant:
+
+```
+
+valid_for_signing =
+valid_tick
+AND valid_consent
+AND valid_policy
+AND valid_device
+AND valid_quorum
+AND valid_ledger
+AND valid_psbt
+
+```
+
+Execution-time hardening occurs **only after** this evaluation completes successfully.
+
+#### **2.2.3.3 Execution Hardening Scope**
+
+Execution-time hardening addresses:
+- Mempool exposure window reduction
+- Pre-construction denial via spend-time secrets
+- Attacker work amplification during broadcast-to-confirmation
+- Operational discipline (fee strategy, dry-wallet barriers)
+
+For specific execution-time hardening techniques, see Annex H-360 (BIP-360 / P2TSH contexts) and Annex H-CC (Taproot/Tapscript contexts).
+
+Execution-time hardening does **not** address:
+- Custody authority decisions
+- Long-range at-rest exposure (addressed by output type selection)
+- Deterministic prevention of mempool replacement
+- Miner inclusion guarantees
+
+### **2.2.4 No Default Spend Path**
+
+PQHD does not define, mandate, or prefer any specific Bitcoin transaction construction pattern. Implementations MAY select execution patterns appropriate to their deployment context, provided:
+
+1. Custody authority remains governed by PQHD predicates  
+2. Execution patterns do not create alternative authorisation paths  
+3. No execution pattern weakens custody guarantees  
+
+This section supersedes all previously described default spend paths, execution paths, and broadcast semantics in earlier PQHD versions.
 
 ---
 
@@ -2826,18 +2906,15 @@ Recovery paths are explicitly defined to address legitimate lockout scenarios.
 
 ---
 
-### 19.5 Post-Quantum Attack Vector Coverage (INFORMATIVE)
+### **19.5 Post-Quantum Attack Vector Coverage (INFORMATIVE)**
 
-PQHD explicitly addresses the three post-quantum attack vectors that materially affect Bitcoin custody systems. Each vector is mitigated through defined, auditable mechanisms without modifying Bitcoin consensus rules.
+PQHD explicitly addresses the post-quantum attack vectors that materially affect Bitcoin custody systems. Each vector is mitigated through defined, auditable mechanisms without modifying Bitcoin consensus rules.
 
-| Attack Vector                   | Threat Description                                                                                                             | PQHD Defense Mechanism                                                                                                                                                                             |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vector 3 — Implementation Flaws | Timing, side-channel, fault-injection, or implementation errors that undermine post-quantum cryptography on classical hardware | Section 3.8 and Annex L: Mandatory constant-time cryptographic implementation, side-channel resistance requirements, fuzzing, fault simulation, and verifiable testing.                            |
-| Vector 2A — Short-Range Attacks | Quantum-assisted key recovery and transaction replacement during the mempool broadcast window                                  | Unified Custody Predicate: classical key possession is insufficient authority. Optional Annex H spend-path hardening reduces the exposure window and delays disclosure of spend-critical material. |
-| Vector 2B — Long-Range Attacks  | Harvest-Now-Decrypt-Later (HNDL) attacks against legacy UTXOs with exposed public keys                                         | Annex M: Mandatory Commit-Delay-Reveal Secure Migration Protocol for transitioning vulnerable legacy funds into PQHD custody.                                                                      |
-
-These mechanisms provide comprehensive post-quantum coverage across implementation security, transaction execution, and long-term custody migration while remaining fully compatible with current Bitcoin consensus rules.
-
+| Attack Vector                       | Threat Description                                                                                                             | PQHD Defense Mechanism                                                                                                                                                                                                                                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vector 3 — Implementation Flaws** | Timing, side-channel, fault-injection, or implementation errors that undermine post-quantum cryptography on classical hardware | **Section 3.8 and Annex L**: Mandatory constant-time cryptographic implementation, side-channel resistance requirements, fuzzing, fault simulation, and verifiable testing.                                                                                                                                         |
+| **Vector 2A — Short-Range Attacks** | Quantum-assisted key recovery and transaction replacement during the public mempool broadcast window                           | **Unified Custody Predicate**: classical key possession is insufficient authority. **Optional execution-time hardening** (Annex H-360 for BIP-360 / P2TSH contexts; Annex H-CC for current-consensus Taproot/Tapscript contexts) reduces exposure during broadcast and denies pre-construction of competing spends. |
+| **Vector 2B — Long-Range Attacks**  | Harvest-Now-Decrypt-Later (HNDL) attacks against dormant or legacy UTXOs with exposed public keys                              | **Annex M**: Secure Migration Protocol for transitioning quantum-vulnerable legacy outputs into active PQHD custody under deterministic authority control.                                                                                                                                                          |
 ---
 
 ## **19.6 Ephemeral Key Non-Retention and Erasure Evidence (INFORMATIVE)**
@@ -2846,7 +2923,7 @@ PQHD strengthens operational quantum-mitigation guarantees by replacing informal
 
 ### **19.6.1 Non-Retention by Construction**
 
-Ephemeral signing keys used in OTQH-M or equivalent spend-path hardening MUST:
+Ephemeral signing keys used in execution-time hardening mechanisms (for example, QH-EP patterns) MUST:
 
 * be generated within a PQVL-attested runtime;
 * never be written to persistent storage;
@@ -2866,7 +2943,7 @@ and MUST invalidate `valid_device`.
 
 ### **19.6.2 Erasure Evidence Artefact**
 
-Implementations MAY produce a ledger-recorded artefact documenting enforcement of non-retention semantics.
+Implementations SHOULD produce a ledger-recorded artefact documenting enforcement of non-retention semantics.
 
 ```
 ErasureEvidence = {
@@ -2890,7 +2967,7 @@ ErasureEvidence MUST be treated as **audit evidence**, not cryptographic proof o
 
 ### **19.6.3 Custody-Tier Interaction**
 
-* For **PQHD Custody (Baseline)**, ErasureEvidence SHOULD be recorded for OTQH-M signing events.
+* For **PQHD Custody (Baseline)**, ErasureEvidence SHOULD be recorded for any execution-time hardening mechanism that uses ephemeral signing material.
 * For **PQHD Custody (Enterprise)**, policy MAY require `method = "hrot"`.
 
 Failure to produce ErasureEvidence MUST invalidate claims of *operational quantum mitigation* but MUST NOT invalidate transaction correctness or consensus validity.
@@ -3030,6 +3107,12 @@ Major versions (v2.0.0 and later) MAY introduce breaking changes and will requir
 
 No automatic or implicit upgrade is assumed. All version transitions MUST preserve deterministic verification semantics and fail-closed behaviour.
 
+Related execution-layer research and reference constructions for PQHD are maintained at:
+
+https://github.com/rosieRRRRR/bitcoin-quantum-spend
+
+This repository documents Bitcoin execution patterns, spend-path hardening techniques, and BIP-360–aligned constructions that operate **outside** the PQHD custody authority layer. It is provided for implementation guidance and research context only and is **not normative** for PQHD conformance.
+
 ---
 
 # **23. CONFORMANCE REQUIREMENTS (NORMATIVE)**
@@ -3041,13 +3124,11 @@ Implementations claiming PQHD conformance MUST satisfy the requirements of at le
 ## **23.1 Conformance Declaration**
 
 An implementation MUST declare:
-
-* supported conformance tier,
-* supported transport profiles,
-* supported operating modes,
-* supported recovery mechanisms.
-
-False or ambiguous conformance claims are prohibited.
+* Supported conformance tier (Baseline/Enterprise/Transactional)
+* **Supported execution context(s) (Path A / Path B / Both)**
+* Supported transport profiles
+* Supported operating modes
+* Supported recovery mechanisms
 
 ---
 
@@ -4708,234 +4789,186 @@ Any attempt to do so MUST fail-closed.
 
 ---
 
-# **ANNEX H — BTCC SPEND-PATH HARDENING (OTQH-M + TS-MRC) (NORMATIVE–OPTIONAL)**
+# **ANNEX H-360 — BIP-360 EXECUTION-TIME HARDENING (NORMATIVE–OPTIONAL)**
 
-This annex defines **optional, Bitcoin-current-consensus (BTCC)** spend-path hardening techniques that MAY be used by PQHD implementations when producing classical Bitcoin transactions.
+This annex defines execution-time hardening for **Path A — BIP-360 Execution Context (P2TSH outputs)**.
 
-**Scope statement (normative):**
-The mechanisms in this annex are **optional** and **do not form part of the unified custody predicate**. They are **not required** for PQHD conformance. All PQHD custody predicates MUST be fully satisfied **before** any spend-path hardening logic is applied.
+## **H-360.1 Scope and Relationship**
 
-These mechanisms do **not** modify Bitcoin consensus rules.
+This annex:
+- Applies **only** to BIP-360 Pay-to-Tapscript-Hash (P2TSH) outputs
+- Defines **execution mechanics only**, not custody authority
+- MUST be preceded by successful PQHD custody authorisation
+- MUST NOT create alternative authorisation paths
 
----
+## **H-360.2 P2TSH Output Requirements**
 
-## **H.1 Threat Model and Goals (NORMATIVE)**
+BIP-360 P2TSH outputs MUST:
+- Remove the Taproot key path entirely
+- Commit only to tapleaf scripts
+- Use standard Taproot/Tapscript construction otherwise
+- Implementations SHOULD record the active execution context as a ledger event
 
-The techniques in this annex mitigate **operational exposure** in the Bitcoin mempool, including:
+## **H-360.3 Quantum-Hardened Execution Patterns (QH-EP)**
 
-* mempool key harvesting,
-* premature script disclosure,
-* coordinator front-running,
-* quantum-assisted discrete-log attacks during the exposure window.
+### **H-360.3.1 Spend-Time Secret Gate (NORMATIVE)**
 
-They do **not** provide cryptographic post-quantum signatures on-chain and do **not** replace PQHD custody predicates.
-
----
-
-## **H.2 Operational Model (NORMATIVE)**
-
-Spend-path hardening occurs **after** PQHD custody authorisation and **before** transaction broadcast.
-
-Required ordering:
-
-1. Evaluate unified custody predicate.
-2. Authorise signing internally (PQHD).
-3. Construct BTCC spend-path (this annex).
-4. Broadcast according to policy timing.
-
-Failure at any step MUST invalidate the spend attempt.
-
----
-
-## **H.3 One-Time Quantum-Hardened Multisig (OTQH-M) — Parent Output (NORMATIVE)**
-
-The parent output MUST be locked with:
-
-* a future timelock, and
-* a one-time multisig over ephemeral keys, and
-* a hashlock requiring secret revelation.
-
-### **H.3.1 Parent Script Template (ASM)**
+All QH-EP implementations MUST include:
 
 ```
-<T_lock> OP_CHECKLOCKTIMEVERIFY
-OP_DROP
+
 OP_SHA256 <H_S1> OP_EQUALVERIFY
-M <K1_pub> <K2_pub> ... <KM_pub> M OP_CHECKMULTISIG
+
 ```
 
 Where:
+- `S1` is a random, one-time secret revealed only at execution
+- `H_S1 = SHA256(S1)`
+- `S1` MUST be unique per spend attempt
+- `S1` MUST NOT be reused
 
-* `T_lock` is a future absolute locktime,
-* `S1` is a 256-bit secret,
-* `H_S1 = SHA256(S1)`,
-* `K1..KM` are ephemeral public keys,
-* `M == N` (no redundancy).
+### **H-360.3.2 Secret-Keyed Ordering (RECOMMENDED)**
 
----
-
-### **H.3.2 Parent Witness Structure (Spending OTQH-M) (NORMATIVE)**
-
-The witness stack for spending the OTQH-M output MUST conform to the following element order (top → bottom of stack):
-
-1. **`OP_0` (0x00):** Required dummy element for `OP_CHECKMULTISIG`.
-2. **Signatures:** The ordered list of signatures required by the multisig component.
-3. **`S1` preimage:** The full 32-byte preimage `S1` that satisfies the hashlock.
-4. **Redeem script:** The complete serialized OTQH-M redeem script.
-
-
----
-
-
----
-
-## **H.4 Ephemeral Key and Secret Requirements (NORMATIVE)**
-
-Ephemeral material MUST satisfy all of the following:
-
-* keys and secrets MUST be unique per spend attempt,
-* keys and secrets MUST be single-use,
-* private keys MUST be destroyed immediately after signing,
-* secrets MUST NOT persist beyond broadcast.
-
-Any reuse MUST invalidate the spend attempt.
-
----
-
-## **H.5 Two-Secret Multi-Child Reveal (TS-MRC) — Child Output (NORMATIVE)**
-
-The child output enforces a second secret reveal to further compress exposure.
-
-### **H.5.1 Child Script Template (ASM)**
+For scripts with multiple public keys:
 
 ```
-OP_SHA256 <H_S2> OP_EQUALVERIFY
-<CHILD_POLICY>
-```
 
-Where:
-
-* `S2` is an independent 256-bit secret,
-* `H_S2 = SHA256(S2)`,
-* `CHILD_POLICY` enforces downstream spending rules.
-
----
-
-### **H.5.2 Child Witness Structure (Spending TS-MRC) (NORMATIVE)**
-
-The witness stack for spending the TS-MRC output MUST conform to the following element order (top → bottom of stack):
-
-1. **`OP_0` (0x00):** Required dummy element for `OP_CHECKMULTISIG` if `<CHILD_POLICY>` contains `OP_CHECKMULTISIG`.
-2. **Signatures:** The ordered list of signatures required by the Child Policy multisig component (if applicable).
-3. **`S2` preimage:** The full 32-byte preimage `S2` that satisfies the hashlock.
-4. **Redeem script:** The complete serialized Child Policy redeem script.
-
-
----
-
-
----
-
-## **H.6 Operational Timing (INFORMATIVE)**
-
-To minimise mempool exposure time, the following timing targets are recommended. These targets MUST NOT be treated as normative requirements for consensus validity or relay behaviour.
-
-* **Parent broadcast:** Deployments may target submission shortly before `T_lock`, subject to network propagation and fee conditions.
-* **Spend broadcast:** Spending transactions SHOULD be submitted only when they are consensus-final. Implementations MUST NOT assume relay of non-final transactions. Deployments MAY use direct-to-miner submission channels, but this is optional.
-
-### **H.6.1 Transaction Finality and Locktime (NORMATIVE)**
-
-Any transaction spending a CLTV-locked output MUST satisfy:
-
-1. **nLockTime:** The spending transaction `nLockTime` MUST be set to a value greater than or equal to `T_lock`, or MUST be set to `0` where valid.
-2. **nSequence:** The input `nSequence` for the locked outpoint MUST be set to a value that enables locktime evaluation (i.e., less than `0xFFFFFFFE`).
-
-Implementations MUST ensure the spending transaction is consensus-final before broadcast.
-
-### **H.6.2 Package Relay Assumptions and Fallbacks (NORMATIVE)**
-
-Implementations MUST NOT assume universal mempool package relay support.
-
-If this annex is implemented, deployments MUST:
-
-* detect whether the selected broadcast path supports the required relay behaviour for parent/child dependencies, and
-* fail-closed or use an explicit alternative broadcast strategy when such support is unavailable.
-
-Parent-only confirmation is a catastrophic failure mode for this annex’s safety objective. Any recovery, if attempted, MUST require explicit governance procedures and MUST NOT introduce any new authorisation path or weaken the unified custody predicate.
-
-
----
-
-
----
-
-## **H.7 CPFP Package Requirement (NORMATIVE)**
-
-Parent and child transactions MUST form a **Child-Pays-For-Parent (CPFP)** package.
-
-Effective feerate:
+ordering_secret = SHA256("QHEP-Key-Order" || S1)
+tag_i = HMAC-SHA256(ordering_secret, pubkey_i_bytes)
+ordered_keys = sort_by(tag_i)
 
 ```
-f_pkg = (Σ fees) / (Σ vsizes)
+
+### **H-360.3.3 Authorization Modes**
+
+#### **Production Mode (ECC, M-of-M)**
+
 ```
 
-The package MUST meet mempool acceptance thresholds.
+<K1_xonly> OP_CHECKSIG
+<K2_xonly> OP_CHECKSIGADD
+...
+<KM_xonly> OP_CHECKSIGADD <M> OP_NUMEQUAL
 
----
+```
 
-## **H.8 Failure Handling (NORMATIVE)**
+#### **Research Mode (Hash-Based)**
 
-On any failure:
+```
 
-* discard all ephemeral keys,
-* discard all secrets,
-* invalidate the PSBT,
-* regenerate from fresh state.
+OP_SHA256 <H_qpk> OP_EQUALVERIFY
+OP_DUP OP_SHA256 <expected_hash_i> OP_EQUALVERIFY OP_DROP
+...
+OP_TRUE
 
-Partial reuse is forbidden.
+```
 
----
+## **H-360.4 Optional EPOCH Protocol Binding**
 
-## **H.9 Relationship to PQHD Custody (NORMATIVE)**
+EPOCH Protocol MAY be layered for:
+- Execution context coordination
+- Multi-signer alignment
+- Auditability and tamper-evident binding
 
-The mechanisms in this annex:
+Epoch enforcement is wallet-side only; Bitcoin Script cannot validate epochs.
 
-* MUST NOT weaken any custody predicate,
-* MUST NOT introduce alternate authorisation paths,
-* MUST NOT permit signing when `valid_for_signing = false`,
-* MUST be policy-controlled.
+## **H-360.5 Operational Discipline**
 
-All custody decisions occur **independently** of this annex.
+### **H-360.5.1 Dry-Wallet Barrier**
+- Signing wallets MUST maintain zero on-chain balance
+- Fee funding MUST come from separate fee wallets
 
----
+### **H-360.5.2 Key Independence**
+- Signers MUST use independent keys from separate entropy sources
+- Keys SHOULD be managed across separate devices or administrative domains
 
-## **H.10 Security Properties (INFORMATIVE)**
+### **H-360.5.3 Broadcast Discipline**
+- Use a high initial feerate targeting timely confirmation
+- Implementations SHOULD maintain CPFP readiness where policy permits
+- Conflicting spends MUST be treated as security-relevant events
 
-These techniques:
+## **H-360.6 Recovery Paths**
 
-* reduce effective mempool exposure time,
-* delay script disclosure until near confirmation,
-* limit the window for quantum-assisted key recovery,
-* frustrate coordinator-level manipulation.
+### **H-360.6.1 Unmined Timeout Return**
 
-They are **operational mitigations**, not cryptographic post-quantum signatures.
+```
 
----
+<H_timeout> OP_CHECKLOCKTIMEVERIFY OP_DROP
+<R1_pub> OP_CHECKSIG
+<R2_pub> OP_CHECKSIGADD
+...
+<RR_pub> OP_CHECKSIGADD <R> OP_NUMEQUAL
 
-## **H.11 Non-Goals (INFORMATIVE)**
+```
+
+### **H-360.6.2 Post-Confirmation Fallback (Optional)**
+
+- MUST be pre-constructed and policy-approved
+- MUST NOT create alternative authority paths
+
+## **H-360.7 Wallet Behavior Requirements**
+
+- Track spend broadcast and confirmation state
+- Prohibit ad-hoc alternative spends post-broadcast
+- Discard all ephemeral execution material on failure
+- Partial reuse of execution material is forbidden
+
+## **H-360.8 Non-Goals**
 
 This annex does **not**:
-
-* alter Bitcoin consensus,
-* provide post-quantum on-chain signatures,
-* guarantee miner inclusion,
-* prevent censorship.
+- Provide custody authority
+- Guarantee miner inclusion
+- Deterministically prevent mempool replacement
+- Address at-rest exposure (handled by BIP-360 output type)
 
 ---
 
-## **H.12 Summary (INFORMATIVE)**
+# **ANNEX H-CC — EXECUTION-TIME HARDENING (TAPROOT/TAPSCRIPT) (NORMATIVE–OPTIONAL)**
 
-OTQH-M and TS-MRC provide **optional**, BTCC-compatible hardening that complements PQHD’s custody model by reducing transaction exposure during broadcast. They are **strictly subordinate** to the unified custody predicate and MAY be omitted without affecting PQHD conformance.
+This annex defines execution-time hardening for **Path B — Bitcoin Current Consensus Execution Context using Taproot/Tapscript**.
+
+## **H-CC.1 Scope and Applicability**
+
+This annex applies to:
+- Standard Taproot outputs (including those with key paths)
+- Tapscript-based spending
+- Requires BIP-340/341/342 compatibility
+
+**Legacy outputs (P2WSH, P2SH, etc.):**  
+See **Annex M** for migration guidance to Taproot/Tapscript outputs.
+
+## **H-CC.2 Execution Hardening Application**
+
+All requirements from **Annex H-360 Sections H-360.3 through H-360.8** apply to Taproot/Tapscript contexts with the following clarifications:
+
+### **H-CC.2.1 Taproot Key Path Considerations**
+- Key path existence represents at-rest quantum exposure
+- Script path hardening provides execution-time benefits only
+- Migration to script-path-only outputs SHOULD be considered
+
+### **H-CC.2.2 Tapscript Compatibility**
+- QH-EP patterns are compatible with Tapscript
+- `OP_CHECKSIGADD` MUST be used for M-of-M authorization
+- All Bitcoin consensus and standardness rules apply
+
+## **H-CC.3 Legacy Output Context (INFORMATIVE)**
+
+For non-Taproot outputs:
+- Execution hardening may be limited by script capabilities
+- At-rest exposure remains unchanged
+- **Recommendation:** Migrate via Annex M
+
+## **H-CC.4 Migration Context**
+
+Execution-time hardening complements, but does not replace, secure migration of vulnerable outputs as defined in **Annex M**.
+
+## **H-CC.5 Compatibility Notes**
+
+All execution hardening in this annex:
+- Remains optional
+- Does not modify custody authority
+- Operates within current Bitcoin consensus
+- Is forward-compatible with future Taproot/Tapscript upgrades
 
 ---
 
@@ -5044,24 +5077,7 @@ Additional spend types MAY be defined only via future named profiles.
 
 ---
 
-## **I.6 OTQH-M Defaults (BTCC Optional Hardening) (NORMATIVE)**
-
-If Annex H hardening is enabled, Profile A fixes the following defaults:
-
-| Parameter                    | Value             |
-| ---------------------------- | ----------------- |
-| Ephemeral multisig threshold | 3-of-3            |
-| Parent broadcast lead time   | 20 seconds        |
-| Child broadcast lead time    | 2 seconds         |
-| CPFP targeting               | Top 5–10% mempool |
-| Secret size                  | 256 bits          |
-| Secret reuse                 | Forbidden         |
-
-If Annex H is not enabled, these defaults do not apply.
-
----
-
-## **I.7 Retention Time Lock Defaults (NORMATIVE)**
+## **I.6 Retention Time Lock Defaults (NORMATIVE)**
 
 If Retention Time Lock (RTL) is enabled, Profile A fixes:
 
@@ -5078,7 +5094,7 @@ Any RTL extension MUST:
 
 ---
 
-## **I.8 Recovery and Import Behaviour (NORMATIVE)**
+## **I.7 Recovery and Import Behaviour (NORMATIVE)**
 
 Profile A implementations MUST:
 
@@ -5091,7 +5107,7 @@ Profile A does **not** relax any recovery requirement.
 
 ---
 
-## **I.9 Prohibited Variations (NORMATIVE)**
+## **I.8 Prohibited Variations (NORMATIVE)**
 
 Profile A implementations MUST NOT:
 
@@ -5106,7 +5122,7 @@ Any such variation invalidates Profile A conformance.
 
 ---
 
-## **I.10 Profile A Conformance Statement (NORMATIVE)**
+## **I.9 Profile A Conformance Statement (NORMATIVE)**
 
 An implementation claiming Profile A conformance MUST state:
 
@@ -5114,20 +5130,23 @@ An implementation claiming Profile A conformance MUST state:
 
 ---
 
-## **I.11 Summary (INFORMATIVE)**
+## **I.10 Summary (INFORMATIVE)**
 
 Implementation Profile A provides a concrete, interoperable baseline for PQHD deployments. It enables immediate implementation without discretionary parameter selection while preserving all custody guarantees defined by the PQHD specification.
 
 ---
 
-# **ANNEX J — END-TO-END WORKED EXAMPLES (INFORMATIVE)**
+# **ANNEX J — ILLUSTRATIVE EXAMPLES (INFORMATIVE)**
 
-This annex provides complete, concrete examples demonstrating correct PQHD behaviour across critical workflows.
-All examples are illustrative and do not introduce new requirements.
+**STATUS:** This annex contains illustrative examples only. Examples marked **RESEARCH-ONLY** are for historical reference and are not normative, recommended, or required for PQHD conformance.
 
 ---
 
-## **J.1 Example: BTCC Spend Using OTQH-M + TS-MRC**
+## **J.1 RESEARCH-ONLY EXAMPLE: Legacy BTCC Spend Using OTQH-M + TS-MRC (INFORMATIVE)**
+
+**This example is preserved to document historical design exploration and does not represent a recommended deployment.**
+
+**IMPORTANT:** This example describes **research-only** execution-time hardening patterns that are not part of PQHD v1.0.0. See Annex N for research context.
 
 ### **J.1.1 Initial Conditions**
 
@@ -5145,7 +5164,7 @@ value = 1.00000000 BTC
 
 ---
 
-### **J.1.2 Ephemeral Material Generation**
+### **J.1.2 Ephemeral Material Generation (RESEARCH-ONLY)**
 
 Generate:
 
@@ -5159,7 +5178,7 @@ All ephemeral material is single-use.
 
 ---
 
-### **J.1.3 Parent Transaction Construction**
+### **J.1.3 Parent Transaction Construction (RESEARCH-ONLY)**
 
 Redeem script:
 
@@ -5175,7 +5194,7 @@ OP_SHA256 <H_S1> OP_EQUALVERIFY
 
 ---
 
-### **J.1.4 Parent Signing and Key Destruction**
+### **J.1.4 Parent Signing and Key Destruction (RESEARCH-ONLY)**
 
 * Parent PSBT signed by `K1`, `K2`, `K3`
 * Ephemeral private keys destroyed immediately
@@ -5190,33 +5209,27 @@ ledger_root = L₁
 
 ---
 
-### **J.1.5 Initial Broadcast (Parent Funding Transaction)**
+### **J.1.5 Initial Broadcast (Parent Funding Transaction) (RESEARCH-ONLY)**
 
-The funding transaction that creates the OTQH-M Parent Output is broadcast. This transaction MUST NOT reveal `S1` or `S2`.
+The funding transaction that creates the OTQH-M Parent Output is illustratively broadcast. This transaction does not reveal `S1` or `S2`.
 
 Status: the Parent Output is created and locked by its CLTV timelock and OTQH-M script requirements. The output is not spendable until `T_lock` is met.
 
+---
+
+### **J.1.6 Spend Broadcast (Spending OTQH-M; Revealing S1) (RESEARCH-ONLY)**
+
+Once the CLTV locktime (`T_lock`) has been met, the transaction spending the OTQH-M output is illustratively broadcast. This transaction ILLUSTRATIVELY reveals `S1` and includes the required multisig signatures.
+
+This transaction MAY create a TS-MRC child output as defined in Annex N.
 
 ---
 
-### **J.1.6 Spend Broadcast (Spending OTQH-M; Revealing S1)**
+### **J.1.7 Final Spend Broadcast (Spending TS-MRC; Revealing S2) (RESEARCH-ONLY)**
 
-Once the CLTV locktime (`T_lock`) has been met, the transaction spending the OTQH-M output is broadcast. This transaction MUST reveal `S1` as part of the witness defined in Section H.3.2 and MUST include the required multisig signatures.
+If a TS-MRC output is used, the transaction spending the TS-MRC output is illustratively broadcast and reveals `S2`.
 
-This transaction MAY create a TS-MRC child output as defined in Annex H.
-
-
----
-
-
----
-
-### **J.1.7 Final Spend Broadcast (Spending TS-MRC; Revealing S2)**
-
-If a TS-MRC output is used, the transaction spending the TS-MRC output is broadcast and MUST reveal `S2` as part of the witness defined in Section H.5.2.
-
-If the TS-MRC output is used as part of a CPFP strategy, fees SHOULD be selected to ensure the package meets prevailing relay and miner acceptance thresholds.
-
+If the TS-MRC output is used as part of a CPFP strategy, fees MAY be selected to ensure the package meets prevailing relay and miner acceptance thresholds.
 
 ---
 
@@ -5352,33 +5365,13 @@ Wallet operational again.
 
 ---
 
-## **J.4 Deterministic Failure Handling Example**
-
-If at any point:
-
-* EpochTick expires
-* Attestation fails
-* Ledger divergence occurs
-* Policy evaluation fails
-
-Then:
-
-```
-valid_for_signing = false
-```
-
-No partial signing occurs.
-The operation must restart with fresh state.
-
----
-
-## **J.5 Example: Deterministic PQHD Multisig Spend (Profile A, No BTCC Hardening)**
+## **J.4 Example: Deterministic PQHD Multisig Spend (Profile A, No BTCC Hardening)**
 
 This example demonstrates a **baseline deterministic multisig spend** under PQHD Profile A without BTCC spend-path hardening.
 
 ---
 
-### **J.5.1 Initial Conditions**
+### **J.4.1 Initial Conditions**
 
 * Wallet initialised with PQHD root
 * Two signing devices enrolled (`device-A`, `device-B`)
@@ -5402,7 +5395,7 @@ value = 0.50000000 BTC
 
 ---
 
-### **J.5.2 Redeem Script Construction**
+### **J.4.2 Redeem Script Construction**
 
 Redeem script (ASM):
 
@@ -5418,7 +5411,7 @@ OP_0 <SHA256(redeem_script)>
 
 ---
 
-### **J.5.3 PSBT Construction and Canonicalisation**
+### **J.4.3 PSBT Construction and Canonicalisation**
 
 * PSBT version: v2
 * Inputs and outputs sorted lexicographically
@@ -5434,7 +5427,7 @@ structural_hash = SHAKE256-256(structural_summary)
 
 ---
 
-### **J.5.4 ConsentProof Issuance**
+### **J.4.4 ConsentProof Issuance**
 
 ConsentProof issued with:
 
@@ -5449,7 +5442,7 @@ ConsentProof signed using ML-DSA-65 and bound to the active transport session.
 
 ---
 
-### **J.5.5 Multisig Signing**
+### **J.4.5 Multisig Signing**
 
 Each signer independently verifies:
 
@@ -5473,7 +5466,7 @@ Witness stack:
 
 ---
 
-### **J.5.6 Ledger Update and Broadcast**
+### **J.4.6 Ledger Update and Broadcast**
 
 Ledger entry appended:
 
@@ -5488,7 +5481,7 @@ Transaction is broadcast to the Bitcoin network.
 
 ---
 
-### **J.5.7 Confirmation**
+### **J.4.7 Confirmation**
 
 * Transaction confirmed in a block
 * Final ledger entry appended:
@@ -5504,7 +5497,7 @@ Spend completed successfully.
 
 ---
 
-### **J.5.8 Failure Handling**
+### **J.4.8 Failure Handling**
 
 If at any point:
 
@@ -5520,6 +5513,26 @@ valid_for_signing = false
 ```
 
 No signature is emitted and the spend attempt aborts.
+
+---
+
+## **J.5 Example: Deterministic Failure Handling**
+
+If at any point:
+
+* EpochTick expires
+* Attestation fails
+* Ledger divergence occurs
+* Policy evaluation fails
+
+Then:
+
+```
+valid_for_signing = false
+```
+
+No partial signing occurs.
+The operation must restart with fresh state.
 
 ---
 
@@ -5643,6 +5656,10 @@ Review outputs **MUST** demonstrate compliance with all NORMATIVE requirements i
 ---
 
 # **ANNEX M — SECURE MIGRATION PROTOCOL (NORMATIVE)**
+
+**PRIMARY APPLICATION:** Migration of quantum-vulnerable legacy outputs  
+**EXECUTION CONTEXT:** Primarily Path B, with optional transition to Path A  
+**RELATIONSHIP:** Complements execution-time hardening; addresses at-rest exposure
 
 This Annex defines the **mandatory protocol** for migrating Bitcoin funds from **quantum-vulnerable legacy outputs** into **PQHD-protected custody**.
 
@@ -5777,11 +5794,11 @@ The Secure Migration Protocol consists of **two transactions**, constructed dete
 
 ---
 
-## **M.5 Coordination with BTCC Spend-Path Hardening (INFORMATIVE)**
+## **M.5 Coordination with Execution-Time Hardening (INFORMATIVE)**
 
-The final PQHD destination used in `Tx_R` **MAY** additionally apply Bitcoin-Current-Consensus (BTCC) spend-path hardening techniques defined in **Annex H** (for example, OTQH-M + TS-MRC).
+The final PQHD destination used in `Tx_R` MAY additionally apply execution-time hardening mechanisms defined in Annex H-360 (for BIP-360 / P2TSH contexts) or Annex H-CC (for Bitcoin current-consensus Taproot/Tapscript contexts).
 
-Such use is optional and does not alter the correctness or security properties of the Secure Migration Protocol.
+Such mechanisms are optional and do not alter the correctness or security guarantees of the Secure Migration Protocol.
 
 ---
 
@@ -5812,6 +5829,37 @@ The Secure Migration Protocol is a **mandatory safety mechanism** for PQHD deplo
 
 Absence of this protocol leaves users exposed to irreversible long-range quantum attacks against legacy Bitcoin outputs.
 
+---
+
+# **ANNEX N — ADVANCED EXECUTION-TIME HARDENING RESEARCH (INFORMATIVE)**
+
+**STATUS:** Research-grade material. Not required for PQHD conformance.
+
+## **N.1 Historical Execution Patterns**
+
+This annex preserves advanced execution-time patterns for research reference.
+
+### **N.1.1 OTQH-M (One-Time Quantum-Hardened Multisig)**  
+### **N.1.2 TS-MRC (Two-Secret Multi-Child Reveal)**
+
+These mechanisms:
+- Are presented for research discussion only
+- Do not define conformance requirements
+- MUST NOT be interpreted as default or recommended execution paths
+
+## **N.2 Future Research Directions**
+
+- Multi-stage disclosure sequencing
+- Epoch chaining across staged spends
+- Hash-only authorization at scale
+- Deterministic execution envelopes
+
+## **N.3 Disclaimer**
+
+Patterns in this annex:
+- Have not been validated for production use
+- May contain unresolved edge cases
+- Do not affect PQHD custody guarantees or conformance
 
 ---
 
@@ -5822,6 +5870,9 @@ Bitcoin Current Consensus. The set of Bitcoin consensus rules currently enforced
 
 **Bundle Hash**
 A deterministic hash of the canonical PSBT, computed using SHAKE256-256, that commits to the complete transaction structure approved for signing.
+
+**CDR**
+Commit-Delay-Reveal. A two-transaction sequence used in the Secure Migration Protocol to move quantum-vulnerable legacy outputs into PQHD custody.
 
 **ConsentProof**
 A cryptographically signed, time-bounded object that binds explicit user intent to a specific action, transaction structure, device, role, session, and EpochTick window.
