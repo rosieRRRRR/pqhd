@@ -1,11 +1,11 @@
 # **PQHD — Post-Quantum Hierarchical Deterministic Wallet**
 
 * **Specification Version:** 1.1.0
-* **Status:** Implementation Ready
+* **Status:** Public beta
 * **Date:** 2026
 **Author:** rosiea
 **Contact:** [PQRosie@proton.me](mailto:PQRosie@proton.me)
-**Licence:** Apache License 2.0 — Copyright 2025 rosiea
+**Licence:** Apache License 2.0 — Copyright 2026 rosiea
 
 ---
 
