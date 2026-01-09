@@ -200,7 +200,7 @@ PQHD does **not** produce enforcement decisions.
 
 | Specification | Minimum Version | Purpose |
 |---------------|-----------------|---------|
-| PQSEC | ≥ 2.0.1 | Enforcement of custody predicates |
+| PQSEC | ≥ 2.0.2 | Enforcement of custody predicates |
 | PQSF | ≥ 2.0.2 | Canonical encoding for all custody artefacts |
 | Epoch Clock | ≥ 2.1.1 | Time-bounded consent and policy artefacts |
 | ZET/ZEB | ≥ 1.2.0 | Execution boundary (when executing Bitcoin transactions) |
