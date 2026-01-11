@@ -202,10 +202,12 @@ PQHD does **not** produce enforcement decisions.
 |---------------|-----------------|---------|
 | PQSEC | ≥ 2.0.2 | Enforcement of custody predicates |
 | PQSF | ≥ 2.0.2 | Canonical encoding for all custody artefacts |
-| Epoch Clock | ≥ 2.1.1 | Time-bounded consent and policy artefacts |
+| Epoch Clock | ≥ 2.0.0 | Time-bounded consent and policy artefacts |
 | ZET/ZEB | ≥ 1.2.0 | Execution boundary (when executing Bitcoin transactions) |
 | PQEH | ≥ 2.1.1 | Post-quantum execution hardening (when claiming zero-exposure) |
 | PQVL | ≥ 1.0.3 | Runtime attestation (when valid_runtime is required) |
+
+Implementations MAY evaluate using earlier versions, but MUST NOT claim conformance while below the stated minimums.
 
 PQHD defines custody policy only. All enforcement is performed by PQSEC.
 
