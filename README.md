@@ -6,7 +6,8 @@
 * **Author:** rosiea
 * **Contact:** [PQRosie@proton.me](mailto:PQRosie@proton.me)
 * **Licence:** Apache License 2.0 — Copyright 2026 rosiea
-* **PQ Ecosystem:** CORE — The PQ Ecosystem is a post-quantum security framework built on deterministic enforcement, fail-closed semantics, and refusal-driven authority. Bitcoin is the reference deployment. It is not the scope.
+* **PQ Ecosystem:** CORE — Post-quantum custody architecture for Bitcoin.
+
 
 ---
 
